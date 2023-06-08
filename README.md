@@ -46,4 +46,4 @@ module.exports = {
 
 ## 参考
 
-- [GitHub](https://github.com/smithy545/aws-apps-scripts)
+- [smithy545/aws-apps-scripts](https://github.com/smithy545/aws-apps-scripts)
