@@ -13,7 +13,7 @@ npm i -g @google/clasp
 npm i --save-dev webpack webpack-cli gas-webpack-plugin
 ```
 
-## package.json の　　scripts に webpack を追加
+## package.json の scripts に webpack を追加
 
 ```javascript
 scripts: {
@@ -42,6 +42,12 @@ module.exports = {
     },
     plugins: [new GasPlugin()]
 }
+```
+
+## デプロイ
+
+```
+(cd dist; clasp pull); npm run webpack; (cd dist; clasp push)
 ```
 
 ## 参考
