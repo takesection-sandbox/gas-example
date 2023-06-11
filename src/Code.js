@@ -1,4 +1,5 @@
 const AssumeRole = require('./assume-role');
+const xmlparser = require('fast-xml-parser');
 
 global.assumeRole = () => {
     const properties = PropertiesService.getScriptProperties();
@@ -15,5 +16,8 @@ global.assumeRole = () => {
     const url = `${req.protocol}//${req.hostname}${req.path}?${query}`;
 
     const response = UrlFetchApp.fetch(url);
-    Logger.log(response);
+    const text = response.getContentText();
+    const json = new xmlparser.XMLParser().parse(text);
+
+    Logger.log(json);
 };
