@@ -44,6 +44,12 @@ module.exports = {
 }
 ```
 
+## テスト
+
+```
+AWS_ACCESS_KEY_ID=<YOUR ACCESS KEY> AWS_SECRET_ACCESS_KEY=<YOUR SECRET ACCESS KEY> ROLE_ARN=<YOUR ROLE ARN> npm test
+```
+
 ## デプロイ
 
 ```
