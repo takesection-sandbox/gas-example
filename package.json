@@ -1,8 +1,8 @@
 {
   "name": "gas-example",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Example",
+  "main": "Code.js",
   "scripts": {
     "test": "jest",
     "webpack": "webpack"

@@ -1,7 +1,47 @@
 const Sts = require('./sts');
 const S3 = require('./s3');
-
 const xmlparser = require('fast-xml-parser');
+
+global.putObject = () => {
+    const credential = global.assumeRole();
+    
+    const properties = PropertiesService.getScriptProperties();
+    const bucketName = properties.getProperty('BUCKET_NAME');
+    const key = '/test.json';
+    const contentType = 'application/json';
+    const region = 'ap-northeast-3';
+
+    const content = {
+        message: 'Hello world'
+    };
+    const res = global.S3.putObject(credential.AWS_ACCESS_KEY_ID
+        ,credential.AWS_SECRET_ACCESS_KEY
+        ,region
+        ,bucketName
+        ,key
+        ,contentType 
+        ,JSON.stringify(content)
+        ,credential.SESSION_TOKEN);
+
+    Logger.log(res);
+    return res; 
+}
+
+global.assumeRole = () => {
+    const properties = PropertiesService.getScriptProperties();
+    const access_key_id = properties.getProperty('ACCESS_KEY_ID');
+    const secret_access_key = properties.getProperty('SECRET_ACCESS_KEY');
+    const region = 'ap-northeast-1';
+    const role_arn = properties.getProperty('ROLE_ARN');
+    const role_session_name = 'test';
+
+    const res = global.Sts.assumeRole(access_key_id, secret_access_key, region, role_arn, role_session_name);
+    Logger.log(res);
+
+    return res;
+};
+
+global.Signature = require('./signature-v4');
 
 global.Sts = {
     assumeRole: (access_key_id, secret_access_key, region, role_arn, role_session_name) => {
@@ -47,42 +87,3 @@ global.S3 = {
         return UrlFetchApp.fetch(url, options);
     }
 };
-
-global.assumeRole = () => {
-    const properties = PropertiesService.getScriptProperties();
-    const access_key_id = properties.getProperty('ACCESS_KEY_ID');
-    const secret_access_key = properties.getProperty('SECRET_ACCESS_KEY');
-    const region = 'ap-northeast-1';
-    const role_arn = properties.getProperty('ROLE_ARN');
-    const role_session_name = 'test';
-
-    const res = global.Sts.assumeRole(access_key_id, secret_access_key, region, role_arn, role_session_name);
-    Logger.log(res);
-
-    return res;
-};
-
-global.putObject = () => {
-    const credential = global.assumeRole();
-    
-    const properties = PropertiesService.getScriptProperties();
-    const bucketName = properties.getProperty('BUCKET_NAME');
-    const key = '/test.json';
-    const contentType = 'application/json';
-    const region = 'ap-northeast-3';
-
-    const content = {
-        message: 'Hello world'
-    };
-    const res = global.S3.putObject(credential.AWS_ACCESS_KEY_ID
-        ,credential.AWS_SECRET_ACCESS_KEY
-        ,region
-        ,bucketName
-        ,key
-        ,contentType 
-        ,JSON.stringify(content)
-        ,credential.SESSION_TOKEN);
-
-    Logger.log(res);
-    return res; 
-}
