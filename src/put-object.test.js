@@ -2,11 +2,13 @@ const { SignatureV4 } = require('@aws-sdk/signature-v4');
 const { Sha256 } = require('@aws-crypto/sha256-js');
 const Signature = require('./signature-v4');
 const https = require('https');
+const S3 = require('./s3');
+const { sign } = require('crypto');
 
 test ('sign', async () => {
     const signerInit = {
         service: 's3',
-        region: 'ap-northeast-1',
+        region: 'ap-northeast-3',
         'sha256': Sha256,
         credentials: {
             accessKeyId: 'foo',
@@ -15,18 +17,20 @@ test ('sign', async () => {
     };
 
     const signer = new SignatureV4(signerInit);
+    const bucketName = 'mybucket';
+    const contentType = 'application/json';
 
     const request = {
         'method': 'PUT',
         'protocol': 'https:',
         'path': '/my.json',
         'headers': {
-            'host': 'mybucket.s3.ap-northeast-1.amazonaws.com',
-            'Content-Type': 'application/json',
+            'host': `${bucketName}.s3.ap-northeast-3.amazonaws.com`,
+            'Content-Type': contentType,
             'X-Amz-Content-Sha256': 'UNSIGNED-PAYLOAD',
             'X-Amz-Security-Token': 'baz'
         },
-        'hostname': 'mybucket.s3.ap-northeast-1.amazonaws.com',
+        'hostname': `${bucketName}.s3.ap-northeast-3.amazonaws.com`
     };
 
     const signingDate = new Date('2000-01-01T00:00:00.000Z');
@@ -37,10 +41,8 @@ test ('sign', async () => {
     
     console.log(headers);
 
-    const res = new Signature('s3', 'ap-northeast-1', signerInit.credentials.accessKeyId, signerInit.credentials.secretAccessKey).sign(
-        signingDate,
-        request
-    );
+    const s3 = new S3(signerInit.credentials.accessKeyId, signerInit.credentials.secretAccessKey, 'baz');
+    const res = s3.putObject(signingDate, bucketName, request.path, contentType, 0);
 
     console.log(res.headers);
 
@@ -50,7 +52,7 @@ test ('sign', async () => {
 test.skip ('put-object', () => {
     const accessKeyId = process.env['AWS_ACCESS_KEY_ID'];
     const secretAccessKey = process.env['AWS_SECRET_ACCESS_KEY'];
-    const securityToken = process.env['SECURITY_TOKEN'];
+    const securityToken = process.env['SESSION_TOKEN'];
 
     const bucketName = process.env['BUCKET_NAME'];
 
@@ -63,7 +65,6 @@ test.skip ('put-object', () => {
         'headers': {
             'host': `${bucketName}.s3.ap-northeast-3.amazonaws.com`,
             'Content-Type': 'application/json',
-            'Content-Length': JSON.stringify(bucketName).length,
             'X-Amz-Content-Sha256': 'UNSIGNED-PAYLOAD',
             'X-Amz-Security-Token': securityToken
         },
@@ -71,13 +72,15 @@ test.skip ('put-object', () => {
     };
 
     const signedRequest = signature.sign(new Date(), request);
+    
+    const payload = JSON.stringify(signedRequest);
+    signedRequest.headers['Content-Length'] = payload.length;
 
     const url = `${request.protocol}//${request.hostname}${request.path}`;
     const options = {
         method: 'PUT',
         'headers': signedRequest.headers
     }
-    const payload = JSON.stringify(signedRequest);
     
     console.log(url);
 

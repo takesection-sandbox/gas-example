@@ -11,7 +11,7 @@ test ('empty string', () => {
     expect(empty).toEqual('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
 });
 
-test ('presign', () => {
+test ('assume role', () => {
     const signerInit = {
         service: 'sts',
         region: 'ap-northeast-1',
@@ -80,7 +80,15 @@ test.skip ('assumeRole', () => {
         expect(res.statusCode).toEqual(200);
         res.on('data', (data) => {
             responseText = data.toString('utf8');
-            process.stdout.write(JSON.stringify(new xml.XMLParser().parse(responseText)));
+            responseJson = new xml.XMLParser().parse(responseText);
+            process.stdout.write(JSON.stringify(responseJson) + '\n\n');
+
+            const accessKeyId = responseJson['AssumeRoleResponse']['AssumeRoleResult']['Credentials']['AccessKeyId'];
+            const secretAccessKey = responseJson['AssumeRoleResponse']['AssumeRoleResult']['Credentials']['SecretAccessKey'];
+            const sessionToken = responseJson['AssumeRoleResponse']['AssumeRoleResult']['Credentials']['SessionToken'];
+            process.stdout.write(`AWS_ACCESS_KEY_ID=${accessKeyId}\n`);
+            process.stdout.write(`AWS_SECRET_ACCESS_KEY=${secretAccessKey}\n`);
+            process.stdout.write(`SESSION_TOKEN=${sessionToken}\n`);
         }).on('error', (e) => {
             process.stderr.write(e);
         })
