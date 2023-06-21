@@ -38,14 +38,76 @@ class Signature {
         });
     }
 
+    headers(h) {
+        return Object.keys(h).sort((a, b) => a.toLowerCase() < b.toLowerCase() ? -1 : 1).reduce((acc, k) => {
+            acc += k.toLowerCase() + ':' + h[k] + '\n';
+            return acc;
+        }, '');
+    }
+
+    signedHeaders(h) {
+        return Object.keys(h).sort((a, b) => a.toLowerCase() < b.toLowerCase() ? -1 : 1).reduce((acc, k) => {
+            if (acc) {
+                acc += ';' + k.toLowerCase();
+            } else {
+                acc = k.toLowerCase();
+            }
+            return acc;
+        }, '');
+    }
+
+    query(q) {
+        return Object.entries(q).sort((a, b) => a[0] < b[0] ? -1 : 1).reduce((acc, [key, value]) => {
+            if (acc) {
+                acc += '&' + key + '=' + this.fixedEncodeURIComponent(value);
+            } else {
+                acc = key + '=' + this.fixedEncodeURIComponent(value);
+            }
+            return acc;
+        }, '');
+    }
+
+    sign(signingDate, request) {
+        const dateStringFull = this.dateStringFull(signingDate);
+        const dateStringShort = this.dateStringShort(signingDate);
+
+        request['headers']['X-Amz-Date'] = this.dateStringFull(signingDate);
+        
+        const algorithm = 'AWS4-HMAC-SHA256';
+        const scope = dateStringShort + '/' + this.region + '/' + this.service + '/aws4_request';
+
+        const headers = this.headers(request.headers);
+        const signedHeaders = this.signedHeaders(request.headers);
+        
+        const query = this.query(request.query ? request.query : {});
+
+        const canonicalString = request.method + '\n'
+            + request.path + '\n'
+            + query + '\n'
+            + headers + '\n'
+            + signedHeaders + '\n'
+            + request.headers['X-Amz-Content-Sha256'];
+       
+        const canonHash = hex.stringify(sha256(canonicalString));
+
+        const stringToSign = algorithm + '\n'
+            + dateStringFull + '\n'
+            + scope + '\n'
+            + canonHash;
+       
+        const key = this.getSignatureKey(this.secret_access_key, dateStringShort, this.region, this.service);
+        const signature = hex.stringify(hmac(stringToSign, key));
+
+        request.headers['Authorization'] = `${algorithm} Credential=${this.access_key_id}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+        return request;
+    }
+
     presign(expireIn, signingDate, request) {
         const dateStringFull = this.dateStringFull(signingDate);
         const dateStringShort = this.dateStringShort(signingDate);
 
-        const headers = Object.keys(request.headers).sort((a, b) => a < b ? -1 : 1).reduce((acc, k) => {
-            acc += k.toLowerCase() + ':' + request.headers[k] + '\n';
-            return acc;
-        }, '');
+        const headers = this.headers(request.headers);
+        const signedHeaders = this.signedHeaders(request.headers);
 
         const algorithm = 'AWS4-HMAC-SHA256';
         const scope = dateStringShort + '/' + this.region + '/' + this.service + '/aws4_request';
@@ -55,22 +117,15 @@ class Signature {
         request.query['X-Amz-Date'] = dateStringFull;
         request.query['X-Amz-Expires'] = expireIn.toString();
 
-        request.query['X-Amz-SignedHeaders'] = 'host';
+        request.query['X-Amz-SignedHeaders'] = signedHeaders;
 
-        const query = Object.entries(request.query).sort((a, b) => a[0] < b[0] ? -1 : 1).reduce((acc, [key, value]) => {
-            if (acc) {
-                acc += '&' + key + '=' + this.fixedEncodeURIComponent(value);
-            } else {
-                acc = key + '=' + this.fixedEncodeURIComponent(value);
-            }
-            return acc;
-        }, '');
+        const query = this.query(request.query);
 
         const canonicalString = request.method + '\n'
             + request.path + '\n'
             + query + '\n'
             + headers + '\n'
-            + 'host' + '\n'
+            + signedHeaders + '\n'
             + hex.stringify(sha256(''));
        
         const canonHash = hex.stringify(sha256(canonicalString));
