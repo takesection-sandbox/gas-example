@@ -51,7 +51,7 @@ test ('assume role', () => {
         expect(query['X-Amz-Signature']).toEqual('d742ef81916860bb7c31b796bec1b73aebf85bb31eb695643bbaee0bd4ee6469');
     })();
 
-    const sts = new Sts(signerInit.credentials.accessKeyId, signerInit.credentials.secretAccessKey);
+    const sts = new Sts(signerInit.credentials.accessKeyId, signerInit.credentials.secretAccessKey, signerInit.region);
     const res = sts.assumeRole(options.expiresIn, options.signingDate, request.query.RoleArn, request.query.RoleSessionName);
     console.log(res);
     expect(res.query['X-Amz-Signature']).toEqual('d742ef81916860bb7c31b796bec1b73aebf85bb31eb695643bbaee0bd4ee6469');
@@ -61,7 +61,7 @@ test.skip ('assumeRole', () => {
     const accessKeyId = process.env['AWS_ACCESS_KEY_ID'];
     const secretAccessKey = process.env['AWS_SECRET_ACCESS_KEY'];
     const roleArn = process.env['ROLE_ARN'];
-    const sts = new Sts(accessKeyId, secretAccessKey);
+    const sts = new Sts(accessKeyId, secretAccessKey, 'ap-northeast-1');
     const signed = sts.assumeRole(1800, new Date(), roleArn, 'test');
     const url = `${signed.protocol}//${signed.hostname}${signed.path}?`;
     const params = Object.entries(signed.query).reduce((acc, [key, value]) => {

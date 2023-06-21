@@ -41,7 +41,7 @@ test ('sign', async () => {
     
     console.log(headers);
 
-    const s3 = new S3(signerInit.credentials.accessKeyId, signerInit.credentials.secretAccessKey, 'baz');
+    const s3 = new S3(signerInit.credentials.accessKeyId, signerInit.credentials.secretAccessKey, signerInit.region, 'baz');
     const res = s3.putObject(signingDate, bucketName, request.path, contentType, 0);
 
     console.log(res.headers);

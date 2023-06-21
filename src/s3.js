@@ -2,12 +2,11 @@ const Signature = require('./signature-v4');
 
 class S3 {
 
-    constructor(access_key_id, secret_access_key, session_token) {
+    constructor(access_key_id, secret_access_key, region, session_token) {
         this.service = 's3';
-        this.region = 'ap-northeast-3';
-        this.signature = new Signature(this.service, this.region, access_key_id, secret_access_key);
+        this.region = region;
         this.session_token = session_token;
-
+        this.signature = new Signature(this.service, this.region, access_key_id, secret_access_key);
     }
     
     putObject(signingDate, bucketName, key, contentType) {
@@ -19,10 +18,12 @@ class S3 {
                 host: `${bucketName}.${this.service}.${this.region}.amazonaws.com`,
                 'Content-Type': contentType,
                 'X-Amz-Content-Sha256': 'UNSIGNED-PAYLOAD',
-                'X-Amz-Security-Token': this.session_token
             },
             hostname: `${bucketName}.${this.service}.${this.region}.amazonaws.com`,
         };
+        if (this.session_token) {
+            request.headers['X-Amz-Security-Token'] = this.session_token;
+        }
         return this.signature.sign(signingDate, request);
     }
 }
