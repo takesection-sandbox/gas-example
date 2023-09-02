@@ -10,19 +10,29 @@ global.doGet = () => {
     const oidcToken = ScriptApp.getIdentityToken();
     Logger.log(oidcToken);
 
-    const json = JSON.stringify({ "idtoken": oidcToken });
-
     const token = encodeURIComponent(oidcToken);
     const formData = `Action=AssumeRoleWithWebIdentity&RoleSessionName=${role_session_name}&RoleArn=${role_arn}&WebIdentityToken=${token}&Version=2011-06-15`;
     const res = UrlFetchApp.fetch("https://sts.amazonaws.com/", {
         'method': 'post',
         "payload": formData
     });
-    Logger.log(res);
 
     const xml = res.getContentText();
-    const text = JSON.stringify(new xmlparser.XMLParser().parse(xml));
-    return ContentService.createTextOutput(text).setMimeType(ContentService.MimeType.JSON);
+    const json = new xmlparser.XMLParser().parse(xml);
+    const text = JSON.stringify(json);
+    Logger.log(text);
+
+    const credentials = json['AssumeRoleWithWebIdentityResponse']['AssumeRoleWithWebIdentityResult']['Credentials'];
+    const access_key_id = credentials['AccessKeyId'];
+    const secret_access_key = credentials['SecretAccessKey'];
+    const session_token = credentials['SessionToken'];
+    const temporary_security_credentials = {
+        "ACCESS_KEY_ID": access_key_id,
+        "SECRET_ACCESS_KEY": secret_access_key,
+        "SESSION_TOKE": session_token
+    };
+
+    return ContentService.createTextOutput(JSON.stringify(temporary_security_credentials)).setMimeType(ContentService.MimeType.JSON);
 };
 
 global.putObject = () => {
