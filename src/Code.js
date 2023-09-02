@@ -2,6 +2,29 @@ const Sts = require('./sts');
 const S3 = require('./s3');
 const xmlparser = require('fast-xml-parser');
 
+global.doGet = () => {
+    const properties = PropertiesService.getScriptProperties();
+    const role_arn = properties.getProperty('ROLE_ARN'); 
+    const role_session_name = 'app1';
+    
+    const oidcToken = ScriptApp.getIdentityToken();
+    Logger.log(oidcToken);
+
+    const json = JSON.stringify({ "idtoken": oidcToken });
+
+    const token = encodeURIComponent(oidcToken);
+    const formData = `Action=AssumeRoleWithWebIdentity&RoleSessionName=${role_session_name}&RoleArn=${role_arn}&WebIdentityToken=${token}&Version=2011-06-15`;
+    const res = UrlFetchApp.fetch("https://sts.amazonaws.com/", {
+        'method': 'post',
+        "payload": formData
+    });
+    Logger.log(res);
+
+    const xml = res.getContentText();
+    const text = JSON.stringify(new xmlparser.XMLParser().parse(xml));
+    return ContentService.createTextOutput(text).setMimeType(ContentService.MimeType.JSON);
+};
+
 global.putObject = () => {
     const credential = global.assumeRole();
     
@@ -25,7 +48,7 @@ global.putObject = () => {
 
     Logger.log(res);
     return res; 
-}
+};
 
 global.assumeRole = () => {
     const properties = PropertiesService.getScriptProperties();
