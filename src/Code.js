@@ -32,6 +32,15 @@ global.doGet = () => {
         "SESSION_TOKE": session_token
     };
 
+    const region = 'ap-northeast-3';
+    const bucket_name = properties.getProperty('BUCKET_NAME');
+    const key = '/test.txt';
+    const payload = 'Hello World';
+    const contentType = 'plain/text';
+
+    const r = global.S3.putObject(access_key_id, secret_access_key, region, bucket_name, key, contentType, payload, session_token);
+    Logger.log(r);
+
     return ContentService.createTextOutput(JSON.stringify(temporary_security_credentials)).setMimeType(ContentService.MimeType.JSON);
 };
 
